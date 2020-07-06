@@ -7,6 +7,7 @@ import SelectField from '../components/form/SelectField.svelte';
 import TextField from '../components/form/TextField.svelte';
 import {getContext} from 'svelte';
 import {l} from '../js/i18n';
+import {notify} from '../js/Notify';
 import {route} from '../store/Route';
 
 const user = getContext('user');
@@ -23,9 +24,8 @@ let formEl;
 let colorSchemeOptions = [];
 let colorScheme = user.colorScheme;
 let expandUrlToMedia = user.embedMaker.expandUrlToMedia;
-let notificationsDisabled = user.omnibus.notifyPermission == 'denied';
 let theme = user.theme;
-let wantNotifications = user.omnibus.wantNotifications;
+let wantNotifications = notify.wantNotifications;
 let highlight_keywords = user.highlight_keywords.join(', ');
 
 route.update({title: l('Account')});
@@ -52,11 +52,7 @@ function updateUserFromForm(e) {
   const passwords = [form.password.value, form.password_again.value];
 
   if (wantNotifications) {
-    user.omnibus.requestPermissionToNotify(status => {
-      if (status != 'denied') return;
-      wantNotifications = false;
-      notificationsDisabled = true;
-    });
+    notify.requestDesktopAccess();
   }
 
   if (passwords.join('').length && passwords[0] != passwords[1]) {
@@ -82,11 +78,9 @@ function updateUserFromForm(e) {
       <span slot="label">{l('Notification keywords')}</span>
     </TextField>
 
-    {#if !notificationsDisabled}
-      <Checkbox name="notifications" bind:checked="{wantNotifications}">
-        <span slot="label">{l('Enable notifications')}</span>
-      </Checkbox>
-    {/if}
+    <Checkbox name="notifications" bind:checked="{wantNotifications}">
+      <span slot="label">{l('Enable notifications')}</span>
+    </Checkbox>
 
     <Checkbox name="expand_url" bind:checked="{expandUrlToMedia}">
       <span slot="label">{l('Expand URL to media')}</span>
@@ -114,9 +108,5 @@ function updateUserFromForm(e) {
     </div>
 
     <OperationStatus op="{updateUserOp}"/>
-
-    {#if notificationsDisabled}
-      <p class="error">{l('You cannot receive notifications, because it is denied by your browser.')}</p>
-    {/if}
   </form>
 </main>
